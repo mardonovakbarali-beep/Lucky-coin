@@ -1,0 +1,196 @@
+Put your HTML text 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucky Casino</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 14px; min-height: 100vh;
+    font-family: Arial, sans-serif; color: white;
+    background: linear-gradient(160deg, #161331, #38205d);
+  }
+  .game {
+    max-width: 420px; margin: auto; text-align: center;
+    background: #211b3b; padding: 22px 16px;
+    border: 1px solid #68519a; border-radius: 22px;
+  }
+  h1 { color: #ffd95b; margin: 4px 0 10px; }
+  .balance {
+    background: #332751; padding: 15px; border-radius: 14px;
+    margin: 16px 0; font-size: 18px;
+  }
+  .balance strong { color: #6dffb0; font-size: 25px; }
+  .slots {
+    display: flex; gap: 10px; justify-content: center;
+    margin: 22px 0;
+  }
+  .slot {
+    background: #fff8df; color: #211b3b;
+    border-radius: 14px; width: 82px; height: 82px;
+    display: grid; place-items: center; font-size: 42px;
+  }
+  label { display: block; margin: 12px; }
+  input {
+    width: 120px; padding: 10px; border-radius: 9px;
+    border: 0; font-size: 18px; text-align: center;
+  }
+  button {
+    padding: 13px 16px; margin: 5px;
+    border: 0; border-radius: 11px;
+    font-size: 15px; font-weight: bold; cursor: pointer;
+  }
+  .play { background: #ffd447; color: #211b3b; width: 90%; }
+  .bonus { background: #61e7a0; color: #123b2a; }
+  .secondary { background: #51416f; color: white; }
+  #message { min-height: 28px; margin: 12px 0; }
+  .history {
+    text-align: left; margin-top: 20px; padding-top: 12px;
+    border-top: 1px solid #51416f;
+  }
+  .history p { margin: 8px 0; color: #e1d9f5; }
+  .note { font-size: 12px; color: #c6badf; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="game">
+  <h1>🎰 Lucky Casino</h1>
+  <div>Играй и собирай виртуальные монеты</div>
+
+  <div class="balance">
+    Твой баланс<br>
+    <strong><span id="balance">1000</span> 🪙</strong>
+  </div>
+
+  <button class="bonus" id="bonus">🎁 Получить бонус +500</button>
+
+  <div class="slots">
+    <div class="slot" id="s1">🍒</div>
+    <div class="slot" id="s2">⭐</div>
+    <div class="slot" id="s3">🍋</div>
+  </div>
+
+  <label>
+    Ставка виртуальных монет<br><br>
+    <input id="bet" type="number" min="10" step="10" value="10">
+  </label>
+
+  <button class="play" id="play">ИГРАТЬ</button>
+  <button class="secondary" id="reset">Начать заново</button>
+
+  <div id="message">Нажми «Получить бонус» или начни игру.</div>
+
+  <div class="history">
+    <strong>📜 История раундов</strong>
+    <div id="history"><p>Пока нет раундов.</p></div>
+  </div>
+
+  <p class="note">
+    Только виртуальные монеты. Нет денежных выплат или пополнений.
+    Баланс хранится в этом браузере.
+  </p>
+</div>
+
+<script>
+const icons = ["🍒", "🍋", "⭐", "💎", "7️⃣"];
+const $ = id => document.getElementById(id);
+
+let balance = Number(localStorage.getItem("luckyBalance"));
+if (!Number.isFinite(balance) || balance < 0) balance = 1000;
+
+let history = [];
+const today = () => new Date().toLocaleDateString("sv-SE");
+
+function save() {
+  localStorage.setItem("luckyBalance", String(balance));
+  $("balance").textContent = balance.toLocaleString("ru-RU");
+}
+
+function addHistory(text) {
+  history.unshift(text);
+  history = history.slice(0, 8);
+  $("history").innerHTML = history
+    .map(item => "<p>" + item + "</p>").join("");
+}
+
+$("bonus").onclick = () => {
+  const claimed = localStorage.getItem("luckyBonusDate");
+  if (claimed === today()) {
+    $("message").textContent = "Бонус на сегодня уже получен.";
+    return;
+  }
+  balance += 500;
+  localStorage.setItem("luckyBonusDate", today());
+  save();
+  $("message").textContent = "🎁 Получено 500 бесплатных монет!";
+};
+
+$("play").onclick = () => {
+  const bet = Number($("bet").value);
+
+  if (!Number.isInteger(bet) || bet < 10) {
+    $("message").textContent = "Минимальная ставка — 10 монет.";
+    return;
+  }
+  if (bet > balance) {
+    $("message").textContent = "Недостаточно монет. Забери бесплатный бонус.";
+    return;
+  }
+
+  balance -= bet;
+
+  const result = [
+    icons[Math.floor(Math.random() * icons.length)],
+    icons[Math.floor(Math.random() * icons.length)],
+    icons[Math.floor(Math.random() * icons.length)]
+  ];
+
+  $("s1").textContent = result[0];
+  $("s2").textContent = result[1];
+  $("s3").textContent = result[2];
+
+  let payout = 0;
+  if (result[0] === result[1] && result[1] === result[2]) {
+    payout = bet * 5;
+  } else if (
+    result[0] === result[1] ||
+    result[0] === result[2] ||
+    result[1] === result[2]
+  ) {
+    payout = bet * 2;
+  }
+
+  balance += payout;
+  save();
+
+  if (payout > bet) {
+    $("message").textContent =
+      "🎉 Выигрыш! Получено " + payout + " монет.";
+  } else if (payout > 0) {
+    $("message").textContent =
+      "🙂 Возвращено " + payout + " монет.";
+  } else {
+    $("message").textContent = "В этот раз без выигрыша.";
+  }
+
+  addHistory(
+    result.join(" ") + " — ставка " + bet +
+    ", выплата " + payout + ", баланс " + balance
+  );
+};
+
+$("reset").onclick = () => {
+  if (!confirm("Начать заново с 1000 монет?")) return;
+  balance = 1000;
+  history = [];
+  save();
+  $("history").innerHTML = "<p>Пока нет раундов.</p>";
+  $("message").textContent = "Новая игра началась.";
+};
+
+save();
+</script>
+</body>
+</html>
